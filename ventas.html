@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ventas — InventarioPlus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    @keyframes fadeInDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeInUp   { from { opacity:0; transform:translateY(30px);  } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeInLeft { from { opacity:0; transform:translateX(-30px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes slideIn    { from { opacity:0; transform:translateY(10px);  } to { opacity:1; transform:translateY(0); } }
+    @keyframes pulse      { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
+
+    .navbar { animation: fadeInDown 0.5s ease; }
+    .navbar-links a { position:relative; }
+    .navbar-links a::after { content:''; position:absolute; bottom:0; left:50%; width:0; height:2px; background:white; transition:all 0.3s; transform:translateX(-50%); }
+    .navbar-links a:hover::after, .navbar-links a.active::after { width:80%; }
+
+    .page-header { padding:28px 32px 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; animation: fadeInLeft 0.6s ease; }
+    .page-header h1 { font-family:var(--font-title); font-size:22px; color:var(--color-primary); }
+    .page-header p  { font-size:13px; color:var(--color-muted); margin-top:2px; }
+
+    .resumen-bar { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding:20px 32px; animation: fadeInUp 0.6s ease 0.1s both; }
+    .resumen-card { background:var(--color-white); border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow); border-left:4px solid var(--color-secondary); transition:all 0.3s; cursor:default; }
+    .resumen-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,0.1); }
+    .resumen-card h3 { font-size:11px; color:var(--color-muted); font-family:var(--font-title); margin-bottom:6px; letter-spacing:0.5px; }
+    .resumen-card p  { font-size:24px; font-weight:700; color:var(--color-primary); font-family:var(--font-title); }
+    .resumen-card.green { border-left-color:var(--color-green); }
+    .resumen-card.green p { color:var(--color-green); }
+
+    .toolbar { padding:0 32px 16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; animation: fadeInUp 0.6s ease 0.2s both; }
+    .search-box { display:flex; align-items:center; background:var(--color-white); border:1px solid var(--color-gray); border-radius:var(--radius); padding:8px 14px; gap:8px; width:280px; box-shadow:var(--shadow); transition:all 0.3s; }
+    .search-box:focus-within { border-color:var(--color-secondary); box-shadow:0 0 0 3px rgba(46,109,164,0.15); }
+    .search-box input { border:none; outline:none; font-family:var(--font-body); font-size:14px; width:100%; background:transparent; }
+
+    .btn-add { background:linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color:white; border:none; padding:10px 20px; border-radius:var(--radius); font-family:var(--font-title); font-size:13px; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(46,109,164,0.3); }
+    .btn-add:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(46,109,164,0.4); }
+
+    .table-container { margin:0 32px 32px; background:var(--color-white); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; animation: fadeInUp 0.6s ease 0.3s both; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead { background:linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color:white; }
+    thead th { padding:13px 16px; text-align:left; font-family:var(--font-title); font-size:12px; }
+    tbody tr { border-bottom:1px solid var(--color-gray); transition:all 0.2s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:#EFF6FF; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+    tbody td { padding:12px 16px; color:var(--color-text); font-family:var(--font-body); }
+
+    .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; transition:transform 0.2s; }
+    .badge:hover { transform:scale(1.08); }
+    .badge-efectivo      { background:#D1FAE5; color:#065F46; }
+    .badge-tarjeta       { background:#DBEAFE; color:#1E40AF; }
+    .badge-transferencia { background:#FEF3C7; color:#92400E; }
+
+    .btn-delete { border:none; padding:5px 12px; border-radius:6px; font-size:12px; cursor:pointer; background:var(--color-red); color:white; transition:all 0.2s; }
+    .btn-delete:hover { transform:translateY(-1px); box-shadow:0 3px 8px rgba(231,76,60,0.4); }
+
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; justify-content:center; align-items:center; backdrop-filter:blur(4px); }
+    .modal-overlay.open { display:flex; }
+    .modal { background:white; border-radius:12px; padding:32px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.2); animation:slideIn 0.3s ease; }
+    .modal h2 { font-family:var(--font-title); font-size:18px; color:var(--color-primary); margin-bottom:20px; }
+    .form-group { margin-bottom:14px; }
+    .form-group label { display:block; font-size:13px; color:var(--color-muted); margin-bottom:5px; font-weight:500; }
+    .form-group input, .form-group select { width:100%; padding:9px 12px; border:1px solid var(--color-gray); border-radius:6px; font-size:13px; font-family:var(--font-body); outline:none; transition:all 0.2s; box-sizing:border-box; }
+    .form-group input:focus, .form-group select:focus { border-color:var(--color-secondary); box-shadow:0 0 0 3px rgba(46,109,164,0.15); }
+    .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+    .btn-cancel { background:var(--color-gray); color:var(--color-text); border:none; padding:9px 20px; border-radius:6px; font-size:13px; cursor:pointer; transition:opacity 0.2s; }
+    .btn-cancel:hover { opacity:0.8; }
+    .btn-save { background:linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color:white; border:none; padding:9px 20px; border-radius:6px; font-size:13px; cursor:pointer; font-family:var(--font-title); transition:all 0.3s; }
+    .btn-save:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(46,109,164,0.3); }
+    .no-results { text-align:center; padding:40px; color:var(--color-muted); font-size:14px; display:none; }
+
+    @media (max-width:768px) {
+      .resumen-bar { grid-template-columns:1fr; padding:16px; }
+      .page-header, .toolbar { padding:16px; }
+      .table-container { margin:0 16px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <div class="logo-icon"><div class="logo-box"></div></div>
+      <span class="logo-text">Inventario<span class="logo-plus">Plus</span></span>
+    </div>
+    <ul class="navbar-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="productos.html">Productos</a></li>
+      <li><a href="ventas.html" class="active">Ventas</a></li>
+      <li><a href="reportes.html">Reportes</a></li>
+      <li><a href="perfil.html">Perfil</a></li>
+    </ul>
+    <button class="hamburger" id="hamburger">&#9776;</button>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>💰 Ventas</h1>
+      <p>Registra y consulta el historial de ventas.</p>
+    </div>
+    <button class="btn-add" id="btn-nueva">+ Nueva Venta</button>
+  </div>
+
+  <div class="resumen-bar">
+    <div class="resumen-card">
+      <h3>TOTAL DEL DÍA</h3>
+      <p id="total-dia">$0.00</p>
+    </div>
+    <div class="resumen-card green">
+      <h3>VENTAS REALIZADAS</h3>
+      <p id="total-ventas">0</p>
+    </div>
+    <div class="resumen-card">
+      <h3>ARTÍCULOS VENDIDOS</h3>
+      <p id="total-articulos">0</p>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="buscador" placeholder="Buscar venta...">
+    </div>
+    <span id="contador" style="font-size:13px; color:var(--color-muted);"></span>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Precio Unit.</th>
+          <th>Total</th>
+          <th>Método de Pago</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-ventas"></tbody>
+    </table>
+    <p class="no-results" id="no-results">No se encontraron ventas.</p>
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h2>Nueva Venta</h2>
+      <div class="form-group">
+        <label>Producto</label>
+        <input type="text" id="input-producto" placeholder="Ej: Cuaderno universitario">
+      </div>
+      <div class="form-group">
+        <label>Cantidad</label>
+        <input type="number" id="input-cantidad" placeholder="Ej: 3" min="1">
+      </div>
+      <div class="form-group">
+        <label>Precio unitario ($)</label>
+        <input type="number" id="input-precio" placeholder="Ej: 25.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Método de pago</label>
+        <select id="input-pago">
+          <option value="Efectivo">Efectivo</option>
+          <option value="Tarjeta">Tarjeta</option>
+          <option value="Transferencia">Transferencia</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="btn-cancelar">Cancelar</button>
+        <button class="btn-save" id="btn-guardar">Registrar</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>InventarioPlus &nbsp;|&nbsp; BUAP - Facultad de Ciencias de la Computación &nbsp;|&nbsp; 2026</p>
+  </footer>
+  <script>
+    let ventas = [
+      { id:1, fecha:'2026-04-28', hora:'10:30 AM', producto:'Cuaderno universitario', cantidad:3,  precio:25.00,  pago:'Efectivo' },
+      { id:2, fecha:'2026-04-28', hora:'11:15 AM', producto:'Bolígrafo azul',         cantidad:10, precio:5.00,   pago:'Efectivo' },
+      { id:3, fecha:'2026-04-28', hora:'12:00 PM', producto:'Memoria USB 32GB',       cantidad:1,  precio:180.00, pago:'Tarjeta' },
+      { id:4, fecha:'2026-04-28', hora:'01:45 PM', producto:'Refresco 600ml',         cantidad:5,  precio:18.00,  pago:'Efectivo' },
+      { id:5, fecha:'2026-04-28', hora:'03:20 PM', producto:'Detergente 1L',          cantidad:2,  precio:42.00,  pago:'Transferencia' },
+    ];
+
+    function badgePago(pago) {
+      if (pago === 'Efectivo')  return `<span class="badge badge-efectivo">💵 Efectivo</span>`;
+      if (pago === 'Tarjeta')   return `<span class="badge badge-tarjeta">💳 Tarjeta</span>`;
+      return `<span class="badge badge-transferencia">🏦 Transferencia</span>`;
+    }
+
+    function animarNumero(el, fin, prefijo = '') {
+      let start = 0;
+      const dur = 800;
+      const startTime = performance.now();
+      function step(now) {
+        const progress = Math.min((now - startTime) / dur, 1);
+        const val = Math.floor(progress * fin);
+        el.textContent = prefijo + val.toLocaleString();
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = prefijo + fin.toLocaleString();
+      }
+      requestAnimationFrame(step);
+    }
+
+    function actualizarResumen(lista) {
+      const totalDia       = lista.reduce((s, v) => s + v.cantidad * v.precio, 0);
+      const totalArticulos = lista.reduce((s, v) => s + v.cantidad, 0);
+      animarNumero(document.getElementById('total-ventas'),    lista.length);
+      animarNumero(document.getElementById('total-articulos'), totalArticulos);
+      document.getElementById('total-dia').textContent = `$${totalDia.toFixed(2)}`;
+    }
+
+    function renderTabla(filtro = '') {
+      const tbody   = document.getElementById('tbody-ventas');
+      const noRes   = document.getElementById('no-results');
+      const counter = document.getElementById('contador');
+      const lista   = ventas.filter(v =>
+        v.producto.toLowerCase().includes(filtro.toLowerCase()) ||
+        v.pago.toLowerCase().includes(filtro.toLowerCase()) ||
+        v.fecha.includes(filtro)
+      );
+      tbody.innerHTML = '';
+      if (lista.length === 0) {
+        noRes.style.display = 'block';
+        counter.textContent = '0 ventas';
+        actualizarResumen([]);
+        return;
+      }
+      noRes.style.display = 'none';
+      counter.textContent = `${lista.length} venta${lista.length !== 1 ? 's' : ''}`;
+      actualizarResumen(lista);
+      lista.forEach((v, i) => {
+        const total = v.cantidad * v.precio;
+        const tr = document.createElement('tr');
+        tr.style.animation = `slideIn 0.3s ease ${i * 0.05}s both`;
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${v.fecha}</td>
+          <td>${v.hora}</td>
+          <td><strong>${v.producto}</strong></td>
+          <td>${v.cantidad}</td>
+          <td>$${v.precio.toFixed(2)}</td>
+          <td><strong>$${total.toFixed(2)}</strong></td>
+          <td>${badgePago(v.pago)}</td>
+          <td><button class="btn-delete" onclick="eliminar(${v.id})">🗑 Eliminar</button></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('buscador').addEventListener('input', e => {
+      renderTabla(e.target.value);
+    });
+
+    function cerrarModal() {
+      document.getElementById('modal-overlay').classList.remove('open');
+      document.getElementById('input-producto').value = '';
+      document.getElementById('input-cantidad').value = '';
+      document.getElementById('input-precio').value   = '';
+      document.getElementById('input-pago').value     = 'Efectivo';
+    }
+
+    document.getElementById('btn-nueva').addEventListener('click', () => {
+      document.getElementById('modal-overlay').classList.add('open');
+    });
+    document.getElementById('btn-cancelar').addEventListener('click', cerrarModal);
+    document.getElementById('modal-overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('modal-overlay')) cerrarModal();
+    });
+
+    document.getElementById('btn-guardar').addEventListener('click', () => {
+      const producto = document.getElementById('input-producto').value.trim();
+      const cantidad = parseInt(document.getElementById('input-cantidad').value);
+      const precio   = parseFloat(document.getElementById('input-precio').value);
+      const pago     = document.getElementById('input-pago').value;
+      if (!producto || isNaN(cantidad) || isNaN(precio) || cantidad < 1) {
+        alert('Por favor completa todos los campos correctamente.');
+        return;
+      }
+      const now   = new Date();
+      const fecha = now.toISOString().split('T')[0];
+      const hora  = now.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+      const newId = ventas.length ? Math.max(...ventas.map(v => v.id)) + 1 : 1;
+      ventas.unshift({ id:newId, fecha, hora, producto, cantidad, precio, pago });
+      cerrarModal();
+      renderTabla(document.getElementById('buscador').value);
+    });
+
+    function eliminar(id) {
+      if (confirm('¿Seguro que quieres eliminar esta venta?')) {
+        ventas = ventas.filter(v => v.id !== id);
+        renderTabla(document.getElementById('buscador').value);
+      }
+    }
+
+    document.getElementById('hamburger').addEventListener('click', () => {
+      document.querySelector('.navbar-links').classList.toggle('open');
+    });
+
+    renderTabla();
+  </script>
+</body>
+</html>

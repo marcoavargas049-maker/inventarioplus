@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Productos — InventarioPlus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    /* ── Animaciones ── */
+    @keyframes fadeInDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeInUp   { from { opacity:0; transform:translateY(30px);  } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeInLeft { from { opacity:0; transform:translateX(-30px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes slideIn    { from { opacity:0; transform:translateY(10px);  } to { opacity:1; transform:translateY(0); } }
+
+    .navbar { animation: fadeInDown 0.5s ease; }
+    .navbar-links a { position: relative; }
+    .navbar-links a::after { content:''; position:absolute; bottom:0; left:50%; width:0; height:2px; background:white; transition:all 0.3s; transform:translateX(-50%); }
+    .navbar-links a:hover::after, .navbar-links a.active::after { width:80%; }
+
+    .page-header { padding:28px 32px 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; animation: fadeInLeft 0.6s ease; }
+    .page-header h1 { font-family:var(--font-title); font-size:22px; color:var(--color-primary); }
+    .page-header p  { font-size:13px; color:var(--color-muted); margin-top:2px; }
+
+    .toolbar { padding:16px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; animation: fadeInUp 0.6s ease 0.1s both; }
+    .search-box { display:flex; align-items:center; background:var(--color-white); border:1px solid var(--color-gray); border-radius:var(--radius); padding:8px 14px; gap:8px; width:280px; box-shadow:var(--shadow); transition: box-shadow 0.3s, border-color 0.3s; }
+    .search-box:focus-within { border-color:var(--color-secondary); box-shadow:0 0 0 3px rgba(46,109,164,0.15); }
+    .search-box input { border:none; outline:none; font-family:var(--font-body); font-size:14px; color:var(--color-text); width:100%; background:transparent; }
+
+    .btn-add { background:linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color:white; border:none; padding:10px 20px; border-radius:var(--radius); font-family:var(--font-title); font-size:13px; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(46,109,164,0.3); }
+    .btn-add:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(46,109,164,0.4); }
+    .btn-add:active { transform:translateY(0); }
+
+    .table-container { margin:0 32px 32px; background:var(--color-white); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; animation: fadeInUp 0.6s ease 0.2s both; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead { background:linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color:white; }
+    thead th { padding:13px 16px; text-align:left; font-family:var(--font-title); font-size:12px; letter-spacing:0.5px; }
+    tbody tr { border-bottom:1px solid var(--color-gray); transition:all 0.2s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:#EFF6FF; transform:scale(1.001); box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+    tbody td { padding:12px 16px; color:var(--color-text); font-family:var(--font-body); }
+
+    .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; transition: transform 0.2s; }
+    .badge:hover { transform: scale(1.08); }
+    .badge-ok  { background:#D1FAE5; color:#065F46; }
+    .badge-low { background:#FEE2E2; color:#991B1B; animation: pulse 2s infinite; }
+    .badge-mid { background:#FEF3C7; color:#92400E; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+    .btn-edit, .btn-delete { border:none; padding:5px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-family:var(--font-body); transition:all 0.2s; }
+    .btn-edit   { background:var(--color-secondary); color:white; margin-right:4px; }
+    .btn-delete { background:var(--color-red); color:white; }
+    .btn-edit:hover   { transform:translateY(-1px); box-shadow:0 3px 8px rgba(46,109,164,0.4); }
+    .btn-delete:hover { transform:translateY(-1px); box-shadow:0 3px 8px rgba(231,76,60,0.4); }
+
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; justify-content:center; align-items:center; backdrop-filter:blur(4px); }
+    .modal-overlay.open { display:flex; }
+    .modal { background:white; border-radius:12px; padding:32px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.2); animation: slideIn 0.3s ease; }
+    .modal h2 { font-family:var(--font-title); font-size:18px; color:var(--color-primary); margin-bottom:20px; }
+    .form-group { margin-bottom:14px; }
+    .form-group label { display:block; font-size:13px; color:var(--color-muted); margin-bottom:5px; font-weight:500; }
+    .form-group input, .form-group select { width:100%; padding:9px 12px; border:1px solid var(--color-gray); border-radius:6px; font-size:13px; font-family:var(--font-body); outline:none; transition:all 0.2s; box-sizing:border-box; }
+    .form-group input:focus, .form-group select:focus { border-color:var(--color-secondary); box-shadow:0 0 0 3px rgba(46,109,164,0.15); }
+    .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+    .btn-cancel { background:var(--color-gray); color:var(--color-text); border:none; padding:9px 20px; border-radius:6px; font-size:13px; cursor:pointer; transition:opacity 0.2s; }
+    .btn-cancel:hover { opacity:0.8; }
+    .btn-save { background:linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color:white; border:none; padding:9px 20px; border-radius:6px; font-size:13px; cursor:pointer; font-family:var(--font-title); transition:all 0.3s; }
+    .btn-save:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(46,109,164,0.3); }
+    .no-results { text-align:center; padding:40px; color:var(--color-muted); font-size:14px; display:none; }
+
+    @media (max-width:768px) {
+      .page-header, .toolbar { padding:16px; }
+      .table-container { margin:0 16px 24px; }
+      .search-box { width:100%; }
+      thead th:nth-child(3), tbody td:nth-child(3) { display:none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <div class="logo-icon"><div class="logo-box"></div></div>
+      <span class="logo-text">Inventario<span class="logo-plus">Plus</span></span>
+    </div>
+    <ul class="navbar-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="productos.html" class="active">Productos</a></li>
+      <li><a href="ventas.html">Ventas</a></li>
+      <li><a href="reportes.html">Reportes</a></li>
+      <li><a href="perfil.html">Perfil</a></li>
+    </ul>
+    <button class="hamburger" id="hamburger">&#9776;</button>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>📦 Productos</h1>
+      <p>Gestiona tu catálogo de productos y niveles de stock.</p>
+    </div>
+    <button class="btn-add" id="btn-nuevo">+ Nuevo Producto</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="buscador" placeholder="Buscar producto...">
+    </div>
+    <span id="contador" style="font-size:13px; color:var(--color-muted);"></span>
+  </div>
+
+  <div class="table-container">
+    <table id="tabla-productos">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Precio</th>
+          <th>Stock</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-productos"></tbody>
+    </table>
+    <p class="no-results" id="no-results">No se encontraron productos.</p>
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h2 id="modal-titulo">Nuevo Producto</h2>
+      <div class="form-group">
+        <label>Nombre del producto</label>
+        <input type="text" id="input-nombre" placeholder="Ej: Cuaderno universitario">
+      </div>
+      <div class="form-group">
+        <label>Categoría</label>
+        <select id="input-categoria">
+          <option value="Papelería">Papelería</option>
+          <option value="Electrónico">Electrónico</option>
+          <option value="Alimento">Alimento</option>
+          <option value="Ropa">Ropa</option>
+          <option value="Limpieza">Limpieza</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Precio de venta ($)</label>
+        <input type="number" id="input-precio" placeholder="Ej: 25.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Cantidad en stock</label>
+        <input type="number" id="input-stock" placeholder="Ej: 50" min="0">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="btn-cancelar">Cancelar</button>
+        <button class="btn-save"   id="btn-guardar">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>InventarioPlus &nbsp;|&nbsp; BUAP - Facultad de Ciencias de la Computación &nbsp;|&nbsp; 2026</p>
+  </footer>
+  <script>
+    let productos = [
+      { id:1, nombre:'Cuaderno universitario', categoria:'Papelería',   precio:25.00,  stock:45 },
+      { id:2, nombre:'Bolígrafo azul',         categoria:'Papelería',   precio:5.00,   stock:3  },
+      { id:3, nombre:'Mochila escolar',         categoria:'Otro',        precio:350.00, stock:12 },
+      { id:4, nombre:'Memoria USB 32GB',        categoria:'Electrónico', precio:180.00, stock:2  },
+      { id:5, nombre:'Refresco 600ml',          categoria:'Alimento',    precio:18.00,  stock:60 },
+      { id:6, nombre:'Detergente 1L',           categoria:'Limpieza',    precio:42.00,  stock:8  },
+    ];
+    let editandoId = null;
+
+    function badgeStock(stock) {
+      if (stock <= 3)  return `<span class="badge badge-low">⚠ Bajo (${stock})</span>`;
+      if (stock <= 10) return `<span class="badge badge-mid">Medio (${stock})</span>`;
+      return `<span class="badge badge-ok">OK (${stock})</span>`;
+    }
+
+    function renderTabla(filtro = '') {
+      const tbody   = document.getElementById('tbody-productos');
+      const noRes   = document.getElementById('no-results');
+      const counter = document.getElementById('contador');
+      const lista   = productos.filter(p =>
+        p.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
+        p.categoria.toLowerCase().includes(filtro.toLowerCase())
+      );
+      tbody.innerHTML = '';
+      if (lista.length === 0) {
+        noRes.style.display = 'block';
+        counter.textContent = '0 productos';
+        return;
+      }
+      noRes.style.display = 'none';
+      counter.textContent = `${lista.length} producto${lista.length !== 1 ? 's' : ''}`;
+      lista.forEach((p, i) => {
+        const tr = document.createElement('tr');
+        tr.style.animation = `slideIn 0.3s ease ${i * 0.05}s both`;
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td><strong>${p.nombre}</strong></td>
+          <td>${p.categoria}</td>
+          <td>$${p.precio.toFixed(2)}</td>
+          <td>${p.stock}</td>
+          <td>${badgeStock(p.stock)}</td>
+          <td>
+            <button class="btn-edit"   onclick="abrirEditar(${p.id})">✏ Editar</button>
+            <button class="btn-delete" onclick="eliminar(${p.id})">🗑 Eliminar</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('buscador').addEventListener('input', e => {
+      renderTabla(e.target.value);
+    });
+
+    function abrirModal(titulo) {
+      document.getElementById('modal-titulo').textContent = titulo;
+      document.getElementById('modal-overlay').classList.add('open');
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal-overlay').classList.remove('open');
+      document.getElementById('input-nombre').value    = '';
+      document.getElementById('input-precio').value    = '';
+      document.getElementById('input-stock').value     = '';
+      document.getElementById('input-categoria').value = 'Papelería';
+      editandoId = null;
+    }
+
+    document.getElementById('btn-nuevo').addEventListener('click', () => {
+      editandoId = null;
+      abrirModal('Nuevo Producto');
+    });
+
+    document.getElementById('btn-cancelar').addEventListener('click', cerrarModal);
+    document.getElementById('modal-overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('modal-overlay')) cerrarModal();
+    });
+
+    document.getElementById('btn-guardar').addEventListener('click', () => {
+      const nombre    = document.getElementById('input-nombre').value.trim();
+      const categoria = document.getElementById('input-categoria').value;
+      const precio    = parseFloat(document.getElementById('input-precio').value);
+      const stock     = parseInt(document.getElementById('input-stock').value);
+      if (!nombre || isNaN(precio) || isNaN(stock)) {
+        alert('Por favor completa todos los campos correctamente.');
+        return;
+      }
+      if (editandoId !== null) {
+        const p = productos.find(p => p.id === editandoId);
+        p.nombre = nombre; p.categoria = categoria;
+        p.precio = precio; p.stock = stock;
+      } else {
+        const newId = productos.length ? Math.max(...productos.map(p => p.id)) + 1 : 1;
+        productos.push({ id: newId, nombre, categoria, precio, stock });
+      }
+      cerrarModal();
+      renderTabla(document.getElementById('buscador').value);
+    });
+
+    function abrirEditar(id) {
+      const p = productos.find(p => p.id === id);
+      editandoId = id;
+      document.getElementById('input-nombre').value    = p.nombre;
+      document.getElementById('input-categoria').value = p.categoria;
+      document.getElementById('input-precio').value    = p.precio;
+      document.getElementById('input-stock').value     = p.stock;
+      abrirModal('Editar Producto');
+    }
+
+    function eliminar(id) {
+      if (confirm('¿Seguro que quieres eliminar este producto?')) {
+        productos = productos.filter(p => p.id !== id);
+        renderTabla(document.getElementById('buscador').value);
+      }
+    }
+
+    document.getElementById('hamburger').addEventListener('click', () => {
+      document.querySelector('.navbar-links').classList.toggle('open');
+    });
+
+    renderTabla();
+  </script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reportes — InventarioPlus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    @keyframes fadeInDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeInUp   { from { opacity:0; transform:translateY(30px);  } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeInLeft { from { opacity:0; transform:translateX(-30px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes slideIn    { from { opacity:0; transform:translateY(10px);  } to { opacity:1; transform:translateY(0); } }
+    @keyframes growBar    { from { width:0; } to { width:var(--target-width); } }
+
+    .navbar { animation: fadeInDown 0.5s ease; }
+    .navbar-links a { position:relative; }
+    .navbar-links a::after { content:''; position:absolute; bottom:0; left:50%; width:0; height:2px; background:white; transition:all 0.3s; transform:translateX(-50%); }
+    .navbar-links a:hover::after, .navbar-links a.active::after { width:80%; }
+
+    .page-header { padding:28px 32px 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; animation: fadeInLeft 0.6s ease; }
+    .page-header h1 { font-family:var(--font-title); font-size:22px; color:var(--color-primary); }
+    .page-header p  { font-size:13px; color:var(--color-muted); margin-top:2px; }
+
+    .resumen-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; padding:20px 32px; animation: fadeInUp 0.6s ease 0.1s both; }
+    .resumen-card { background:var(--color-white); border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow); border-left:4px solid var(--color-secondary); transition:all 0.3s; }
+    .resumen-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,0.1); }
+    .resumen-card h3 { font-size:11px; color:var(--color-muted); font-family:var(--font-title); margin-bottom:6px; letter-spacing:0.5px; }
+    .resumen-card p  { font-size:24px; font-weight:700; color:var(--color-primary); font-family:var(--font-title); }
+    .resumen-card.green { border-left-color:var(--color-green); }
+    .resumen-card.green p { color:var(--color-green); }
+    .resumen-card.red   { border-left-color:var(--color-red); }
+    .resumen-card.red p { color:var(--color-red); }
+
+    .content-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; padding:0 32px 32px; animation: fadeInUp 0.6s ease 0.2s both; }
+    .panel { background:var(--color-white); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; transition:transform 0.3s, box-shadow 0.3s; }
+    .panel:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.1); }
+    .panel-header { background:linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color:white; padding:12px 18px; font-family:var(--font-title); font-size:13px; }
+    .panel-body { padding:16px; }
+
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead { background:linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color:white; }
+    thead th { padding:10px 14px; text-align:left; font-family:var(--font-title); font-size:11px; }
+    tbody tr { border-bottom:1px solid var(--color-gray); transition:all 0.2s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:#EFF6FF; }
+    tbody td { padding:10px 14px; font-family:var(--font-body); color:var(--color-text); }
+
+    .bar-chart { display:flex; flex-direction:column; gap:10px; padding:8px 0; }
+    .bar-row { display:flex; align-items:center; gap:10px; }
+    .bar-label { font-size:12px; color:var(--color-muted); width:80px; text-align:right; font-family:var(--font-body); }
+    .bar-track { flex:1; background:var(--color-bg); border-radius:4px; height:24px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:4px; display:flex; align-items:center; padding-left:8px; animation: growBar 1s ease both; }
+    .bar-fill span { font-size:11px; color:white; font-weight:600; white-space:nowrap; }
+
+    .btn-export { background:linear-gradient(135deg, var(--color-green), #1E8449); color:white; border:none; padding:10px 20px; border-radius:var(--radius); font-family:var(--font-title); font-size:13px; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(39,174,96,0.3); }
+    .btn-export:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(39,174,96,0.4); }
+    .btn-print { background:linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color:white; border:none; padding:10px 20px; border-radius:var(--radius); font-family:var(--font-title); font-size:13px; cursor:pointer; margin-left:8px; transition:all 0.3s; box-shadow:0 4px 12px rgba(26,58,92,0.3); }
+    .btn-print:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(26,58,92,0.4); }
+
+    .rank { display:inline-block; width:22px; height:22px; border-radius:50%; color:white; font-size:11px; font-weight:700; text-align:center; line-height:22px; transition:transform 0.2s; }
+    .rank:hover { transform:scale(1.2); }
+    .rank.gold   { background:linear-gradient(135deg, #F59E0B, #D97706); }
+    .rank.silver { background:linear-gradient(135deg, #94A3B8, #64748B); }
+    .rank.bronze { background:linear-gradient(135deg, #B45309, #92400E); }
+    .rank.other  { background:var(--color-secondary); }
+
+    @media (max-width:900px) {
+      .resumen-bar  { grid-template-columns:repeat(2,1fr); }
+      .content-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:600px) {
+      .resumen-bar  { grid-template-columns:1fr; padding:16px; }
+      .page-header  { padding:16px; }
+      .content-grid { padding:0 16px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <div class="logo-icon"><div class="logo-box"></div></div>
+      <span class="logo-text">Inventario<span class="logo-plus">Plus</span></span>
+    </div>
+    <ul class="navbar-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="productos.html">Productos</a></li>
+      <li><a href="ventas.html">Ventas</a></li>
+      <li><a href="reportes.html" class="active">Reportes</a></li>
+      <li><a href="perfil.html">Perfil</a></li>
+    </ul>
+    <button class="hamburger" id="hamburger">&#9776;</button>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>📊 Reportes</h1>
+      <p>Resumen general del rendimiento del negocio.</p>
+    </div>
+    <div>
+      <button class="btn-export" onclick="exportarCSV()">⬇ Exportar CSV</button>
+      <button class="btn-print"  onclick="window.print()">🖨 Imprimir</button>
+    </div>
+  </div>
+
+  <div class="resumen-bar">
+    <div class="resumen-card">
+      <h3>INGRESOS TOTALES</h3>
+      <p id="ingresos-total">$0.00</p>
+    </div>
+    <div class="resumen-card green">
+      <h3>VENTAS REALIZADAS</h3>
+      <p id="ventas-total">0</p>
+    </div>
+    <div class="resumen-card">
+      <h3>PRODUCTOS EN CATÁLOGO</h3>
+      <p id="productos-total">0</p>
+    </div>
+    <div class="resumen-card red">
+      <h3>STOCK BAJO</h3>
+      <p id="stock-bajo">0</p>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <div class="panel">
+      <div class="panel-header">🏆 Productos más vendidos</div>
+      <div class="panel-body">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Producto</th><th>Unidades</th><th>Ingresos</th></tr>
+          </thead>
+          <tbody id="tbody-top"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">📈 Ventas por día (esta semana)</div>
+      <div class="panel-body">
+        <div class="bar-chart" id="bar-chart"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">⚠ Productos con stock bajo</div>
+      <div class="panel-body">
+        <table>
+          <thead>
+            <tr><th>Producto</th><th>Categoría</th><th>Stock</th></tr>
+          </thead>
+          <tbody id="tbody-stock-bajo"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">💳 Ventas por método de pago</div>
+      <div class="panel-body">
+        <div class="bar-chart" id="bar-pago"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>InventarioPlus &nbsp;|&nbsp; BUAP - Facultad de Ciencias de la Computación &nbsp;|&nbsp; 2026</p>
+  </footer>
+  <script>
+    const ventas = [
+      { producto:'Cuaderno universitario', cantidad:3,  precio:25.00,  pago:'Efectivo',      dia:'Lun' },
+      { producto:'Bolígrafo azul',         cantidad:10, precio:5.00,   pago:'Efectivo',      dia:'Lun' },
+      { producto:'Memoria USB 32GB',       cantidad:1,  precio:180.00, pago:'Tarjeta',       dia:'Mar' },
+      { producto:'Refresco 600ml',         cantidad:5,  precio:18.00,  pago:'Efectivo',      dia:'Mar' },
+      { producto:'Detergente 1L',          cantidad:2,  precio:42.00,  pago:'Transferencia', dia:'Mié' },
+      { producto:'Mochila escolar',        cantidad:1,  precio:350.00, pago:'Tarjeta',       dia:'Jue' },
+      { producto:'Cuaderno universitario', cantidad:5,  precio:25.00,  pago:'Efectivo',      dia:'Jue' },
+      { producto:'Bolígrafo azul',         cantidad:8,  precio:5.00,   pago:'Efectivo',      dia:'Vie' },
+      { producto:'Memoria USB 32GB',       cantidad:2,  precio:180.00, pago:'Tarjeta',       dia:'Vie' },
+      { producto:'Refresco 600ml',         cantidad:12, precio:18.00,  pago:'Transferencia', dia:'Vie' },
+    ];
+
+    const productos = [
+      { nombre:'Cuaderno universitario', categoria:'Papelería',   stock:45 },
+      { nombre:'Bolígrafo azul',         categoria:'Papelería',   stock:3  },
+      { nombre:'Mochila escolar',        categoria:'Otro',        stock:12 },
+      { nombre:'Memoria USB 32GB',       categoria:'Electrónico', stock:2  },
+      { nombre:'Refresco 600ml',         categoria:'Alimento',    stock:60 },
+      { nombre:'Detergente 1L',          categoria:'Limpieza',    stock:8  },
+    ];
+
+    // ── Contador animado ──────────────────────────
+    function animarNumero(el, fin, prefijo = '') {
+      let startTime = null;
+      const dur = 1000;
+      function step(ts) {
+        if (!startTime) startTime = ts;
+        const progress = Math.min((ts - startTime) / dur, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        el.textContent = prefijo + Math.floor(ease * fin).toLocaleString();
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = prefijo + fin.toLocaleString();
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ── Resumen general ───────────────────────────
+    const ingresos  = ventas.reduce((s, v) => s + v.cantidad * v.precio, 0);
+    const stockBajo = productos.filter(p => p.stock <= 5).length;
+    setTimeout(() => {
+      animarNumero(document.getElementById('ventas-total'),    ventas.length);
+      animarNumero(document.getElementById('productos-total'), productos.length);
+      animarNumero(document.getElementById('stock-bajo'),      stockBajo);
+      document.getElementById('ingresos-total').textContent = `$${ingresos.toFixed(2)}`;
+    }, 300);
+
+    // ── Top productos ─────────────────────────────
+    const topMap = {};
+    ventas.forEach(v => {
+      if (!topMap[v.producto]) topMap[v.producto] = { unidades:0, ingresos:0 };
+      topMap[v.producto].unidades += v.cantidad;
+      topMap[v.producto].ingresos += v.cantidad * v.precio;
+    });
+    const topList = Object.entries(topMap).sort((a,b) => b[1].unidades - a[1].unidades).slice(0,5);
+    const tbodyTop = document.getElementById('tbody-top');
+    topList.forEach(([nombre, data], i) => {
+      const cls = ['gold','silver','bronze'][i] || 'other';
+      const tr  = document.createElement('tr');
+      tr.style.animation = `slideIn 0.4s ease ${i*0.1}s both`;
+      tr.innerHTML = `
+        <td><span class="rank ${cls}">${i+1}</span></td>
+        <td><strong>${nombre}</strong></td>
+        <td>${data.unidades} uds</td>
+        <td>$${data.ingresos.toFixed(2)}</td>`;
+      tbodyTop.appendChild(tr);
+    });
+
+    // ── Gráfica por día ───────────────────────────
+    const diasMap = { Lun:0, Mar:0, Mié:0, Jue:0, Vie:0, Sáb:0, Dom:0 };
+    ventas.forEach(v => { diasMap[v.dia] += v.cantidad * v.precio; });
+    const maxDia   = Math.max(...Object.values(diasMap));
+    const barChart = document.getElementById('bar-chart');
+    Object.entries(diasMap).forEach(([dia, total], i) => {
+      const pct = maxDia > 0 ? (total / maxDia * 100).toFixed(1) : 0;
+      const div = document.createElement('div');
+      div.className = 'bar-row';
+      div.style.animation = `slideIn 0.4s ease ${i*0.08}s both`;
+      div.innerHTML = `
+        <span class="bar-label">${dia}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct}%; background:linear-gradient(90deg, var(--color-secondary), var(--color-primary)); --target-width:${pct}%">
+            <span>${total > 0 ? '$'+total.toFixed(0) : ''}</span>
+          </div>
+        </div>`;
+      barChart.appendChild(div);
+    });
+
+    // ── Stock bajo ────────────────────────────────
+    const tbodyStockBajo = document.getElementById('tbody-stock-bajo');
+    productos.filter(p => p.stock <= 10).sort((a,b) => a.stock - b.stock)
+      .forEach((p, i) => {
+        const tr = document.createElement('tr');
+        tr.style.animation = `slideIn 0.4s ease ${i*0.1}s both`;
+        tr.innerHTML = `
+          <td><strong>${p.nombre}</strong></td>
+          <td>${p.categoria}</td>
+          <td style="color:${p.stock<=3?'var(--color-red)':'var(--color-muted)'}; font-weight:600;">
+            ${p.stock} uds ${p.stock<=3 ? '⚠' : ''}
+          </td>`;
+        tbodyStockBajo.appendChild(tr);
+      });
+
+    // ── Ventas por pago ───────────────────────────
+    const pagoMap    = { Efectivo:0, Tarjeta:0, Transferencia:0 };
+    const pagoColors = { Efectivo:'linear-gradient(90deg,#27AE60,#1E8449)', Tarjeta:'linear-gradient(90deg,#2E6DA4,#1A3A5C)', Transferencia:'linear-gradient(90deg,#F59E0B,#D97706)' };
+    ventas.forEach(v => { pagoMap[v.pago] += v.cantidad * v.precio; });
+    const maxPago = Math.max(...Object.values(pagoMap));
+    const barPago = document.getElementById('bar-pago');
+    Object.entries(pagoMap).forEach(([pago, total], i) => {
+      const pct = maxPago > 0 ? (total / maxPago * 100).toFixed(1) : 0;
+      const div = document.createElement('div');
+      div.className = 'bar-row';
+      div.style.animation = `slideIn 0.4s ease ${i*0.1}s both`;
+      div.innerHTML = `
+        <span class="bar-label">${pago}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct}%; background:${pagoColors[pago]}; --target-width:${pct}%">
+            <span>$${total.toFixed(0)}</span>
+          </div>
+        </div>`;
+      barPago.appendChild(div);
+    });
+
+    // ── Exportar CSV ──────────────────────────────
+    function exportarCSV() {
+      const rows = [['Producto','Cantidad','Precio','Total','Pago','Día']];
+      ventas.forEach(v => rows.push([v.producto, v.cantidad, v.precio, (v.cantidad*v.precio).toFixed(2), v.pago, v.dia]));
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const a   = document.createElement('a');
+      a.href     = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+      a.download = 'reporte_ventas.csv';
+      a.click();
+    }
+
+    // ── Navbar hamburguesa ────────────────────────
+    document.getElementById('hamburger').addEventListener('click', () => {
+      document.querySelector('.navbar-links').classList.toggle('open');
+    });
+  </script>
+</body>
+</html>
